@@ -17,4 +17,5 @@ class AddPonkaToImage
     {
         return $this->imagePost;
     }
+    
 }
