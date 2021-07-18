@@ -18,6 +18,7 @@ framework:
           # https://symfony.com/doc/current/messenger.html#transports
           async:
             dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+            serializer: messenger.transport.symfony_serializer
             retry_strategy:
               delay: 500
             options:
