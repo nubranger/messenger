@@ -71,7 +71,7 @@ class ImagePostController extends AbstractController
             // routing key than its transport uses by default
             new AmqpStamp('normal')
         ]);
-        $messageBus->dispatch($envelope);
+        dump($messageBus->dispatch($envelope));
 
 //        $messageBus->dispatch(new LogEmoji(2));
 
