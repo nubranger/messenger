@@ -15,27 +15,25 @@ class ExternalJsonMessageSerializer implements SerializerInterface
         $body = $encodedEnvelope['body'];
         $headers = $encodedEnvelope['headers'];
         $data = json_decode($body, true);
-
-
         if (null === $data) {
             throw new MessageDecodingFailedException('Invalid JSON');
         }
-        if (!isset($data['emoji'])) {
-            throw new MessageDecodingFailedException('Missing the emoji key!');
+        if (!isset($headers['type'])) {
+            throw new MessageDecodingFailedException('Missing "type" header');
         }
-
-        
-        $message = new LogEmoji($data['emoji']);
+        switch ($headers['type']) {
+            case 'emoji':
+                $envelope = $this->createLogEmojiEnvelope($data);
+                break;
+            default:
+                throw new MessageDecodingFailedException(sprintf('Invalid type "%s"', $headers['type']));
+        }
         // in case of redelivery, unserialize any stamps
         $stamps = [];
         if (isset($headers['stamps'])) {
             $stamps = unserialize($headers['stamps']);
         }
-
-        $envelope = new Envelope($message, $stamps);
-        // needed only if you need this to be sent through the non-default bus
-        $envelope = $envelope->with(new BusNameStamp('command.bus'));
-
+        $envelope = $envelope->with(... $stamps);
         return $envelope;
     }
 
@@ -48,6 +46,7 @@ class ExternalJsonMessageSerializer implements SerializerInterface
         if ($message instanceof LogEmoji) {
             // recreate what the data originally looked like
             $data = ['emoji' => $message->getEmojiIndex()];
+            $type = 'emoji';
         } else {
             throw new \Exception('Unsupported message class');
         }
@@ -59,8 +58,21 @@ class ExternalJsonMessageSerializer implements SerializerInterface
             'body' => json_encode($data),
             'headers' => [
                 // store stamps as a header - to be read in decode()
-                'stamps' => serialize($allStamps)
+                'stamps' => serialize($allStamps),
+                'type' => $type,
             ],
         ];
+    }
+
+    private function createLogEmojiEnvelope(array $data): Envelope
+    {
+        if (!isset($data['emoji'])) {
+            throw new MessageDecodingFailedException('Missing the emoji key!');
+        }
+        $message = new LogEmoji($data['emoji']);
+        $envelope = new Envelope($message);
+        // needed only if you need this to be sent through the non-default bus
+        $envelope = $envelope->with(new BusNameStamp('command.bus'));
+        return $envelope;
     }
 }
