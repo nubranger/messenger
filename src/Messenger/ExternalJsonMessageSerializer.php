@@ -15,6 +15,16 @@ class ExternalJsonMessageSerializer implements SerializerInterface
         $body = $encodedEnvelope['body'];
         $headers = $encodedEnvelope['headers'];
         $data = json_decode($body, true);
+
+
+        if (null === $data) {
+            throw new MessageDecodingFailedException('Invalid JSON');
+        }
+        if (!isset($data['emoji'])) {
+            throw new MessageDecodingFailedException('Missing the emoji key!');
+        }
+
+        
         $message = new LogEmoji($data['emoji']);
         // in case of redelivery, unserialize any stamps
         $stamps = [];
